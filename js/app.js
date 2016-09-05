@@ -184,7 +184,6 @@ document.onreadystatechange = function() {
         var password = generate_password();
         // embed password
         $text_password.textContent = password;
-        $hidden_password.value = password;
     }
     /**
      * @description [Builds the usable character set. This depends on the options the user specified.]
@@ -397,7 +396,6 @@ document.onreadystatechange = function() {
             $option_elements = dom.getElementsByClassName("option-status"),
             $text_password = dom.getElementById("text-password"),
             $app_actions_cont = dom.getElementById("app-actions-cont"),
-            $hidden_password = dom.getElementById("hidden-password"),
             $btn_copy = dom.getElementById("btn-action-copy");
         // [app.events.keystrokes]
         // check inputed password length

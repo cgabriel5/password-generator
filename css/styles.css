@@ -96,12 +96,6 @@ body {
     background: #ffe792;
 }
 
-.hidden-password {
-    position: absolute;
-    z-index: -999;
-    top: -9999px;
-}
-
 
 /* [http://meta.stackexchange.com/questions/36176/whats-the-font-used-in-code-blocks/36178] */
 
