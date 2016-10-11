@@ -2,6 +2,10 @@
 
 A simple client-side password generator made in JavaScript.
 
+### Live Demo
+
+Generator can be used live [here](https://cgabriel5.github.io/password-generator/).
+
 ### Issues
 
 Copy to clipboard not supported on mobile.
