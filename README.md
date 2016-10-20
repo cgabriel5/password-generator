@@ -10,6 +10,12 @@ Generator can be used live [here](https://cgabriel5.github.io/password-generator
 
 Copy to clipboard not supported on mobile.
 
+### Contributing
+
+Contributions are welcome! Found a bug, feel like documentation is lacking/confusing and needs an update, have performance/feature suggestions or simply found a typo? Let me know! :)
+
+See how to contribute [here](https://github.com/cgabriel5/password-generator/blob/master/CONTRIBUTING.md).
+
 ### TODO
 
 - [ ] Make alternate method allowing mobile users to easily copy generated password
