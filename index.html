@@ -24,15 +24,18 @@
                     PASSWORD
                 </div>
                 <div class="password-cont">
-                    <span class="text-password text-code" id="text-password"></span>
+                    <span class="text-password text-code" id="text-password" contenteditable="true" spellcheck="false"></span>
                 </div>
             </div>
         </div>
         <!-- generator options -->
         <div class="options-cont">
             <div class="app-actions-cont unselectable undraggable" id="app-actions-cont">
-                <div class="btn btn-blue" data-clipboard-target="#text-password" id="btn-action-copy">
+                <div class="btn btn-blue btn-mode-normal" data-clipboard-target="#text-password" id="btn-action-copy">
                     copy
+                </div>
+                <div class="btn btn-blue btn-mode-mobile" id="btn-action-select">
+                    select
                 </div>
                 <div class="btn btn-gray" id="btn-action-generate">
                     generate

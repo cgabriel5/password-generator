@@ -371,16 +371,31 @@ document.onreadystatechange = function() {
          * @param {EventObject} e [Browser passed in Event Object.]
          */
         "btn_clicks": function(e) {
-            var target = e.target;
-            if (target.id === "btn-action-generate") {
+            var $target = e.target;
+            if ($target.id === "btn-action-generate") {
                 embed_password();
-            } else if (target.id === "option-label-reset") {
+            } else if ($target.id === "option-label-reset") {
                 // clear storage
                 localStorage.clear();
                 // reset options
                 reset_options();
                 // generate password
                 embed_password();
+            } else if ($target.id === "btn-action-select") {
+                // set focus on the password element
+                $text_password.focus();
+                // select the password
+                // http://stackoverflow.com/questions/6139107/programatically-select-text-in-a-contenteditable-html-element/13641884#13641884
+                document.execCommand('selectAll', false, null);
+                // let user know it has copied
+                $target.textContent = "selected! :)";
+                // clear previous timer set
+                if (window.copied_msg_timer) clearTimeout(window.copied_msg_timer);
+                // create a new timer, attach to window for easy access
+                window.copied_msg_timer = setTimeout(function() {
+                    // reset btn text after timer finishes
+                    $target.textContent = "select";
+                }, 1500);
             }
         }
     };
@@ -396,7 +411,8 @@ document.onreadystatechange = function() {
             $option_elements = dom.getElementsByClassName("option-status"),
             $text_password = dom.getElementById("text-password"),
             $app_actions_cont = dom.getElementById("app-actions-cont"),
-            $btn_copy = dom.getElementById("btn-action-copy");
+            $btn_copy = dom.getElementById("btn-action-copy"),
+            $btn_select = dom.getElementById("btn-action-select");
         // [app.events.keystrokes]
         // check inputed password length
         $length_input.addEventListener("input", handlers.length_check);
