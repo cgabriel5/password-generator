@@ -243,24 +243,43 @@ document.onreadystatechange = function() {
         return options;
     }
     /**
+     * @description [Checks whether browser supports copying to clipboard.]
+     * @return {Boolean} [description]
+     */
+    function is_copy_supported() {
+        // https://github.com/zenorocha/clipboard.js/issues/337
+        // http://jsfiddle.net/the_ghost/679drp3r/
+        return (!!document.queryCommandSupported && !!document.queryCommandSupported("copy"));
+    }
+    /**
      * @description [Sets up ClipboardJS.]
      */
     function init_clipboard() {
-        // setup clipboard.js
-        (new Clipboard($btn_copy)).on('success', function(e) {
-            // cache input
-            var input = e.trigger;
-            // let user know it has copied
-            input.textContent = "copied! :)";
-            // clear previous timer set
-            if (window.copied_msg_timer) clearTimeout(window.copied_msg_timer);
-            // create a new timer, attach to window for easy access
-            window.copied_msg_timer = setTimeout(function() {
-                // reset btn text after timer finishes
-                input.textContent = "copy";
-            }, 1500);
-            e.clearSelection();
-        });
+        // only setup clipboard if browser supports copying
+        if (is_copy_supported()) {
+            // show the copy button
+            $btn_copy.classList.remove("none");
+            // setup clipboard.js
+            (new Clipboard($btn_copy)).on('success', function(e) {
+                // cache input
+                var input = e.trigger;
+                // let user know it has copied
+                input.textContent = "copied! :)";
+                // clear previous timer set
+                if (window.copied_msg_timer) clearTimeout(window.copied_msg_timer);
+                // create a new timer, attach to window for easy access
+                window.copied_msg_timer = setTimeout(function() {
+                    // reset btn text after timer finishes
+                    input.textContent = "copy";
+                }, 1500);
+                e.clearSelection();
+            });
+        } else { // browser does not support copy to clipboard action
+            // show the select button
+            $btn_select.classList.remove("none");
+        }
+        // show the generate button
+        $btn_generate.classList.remove("none");
     }
     /* [functions.event.handlers] */
     var handlers = {
@@ -387,15 +406,6 @@ document.onreadystatechange = function() {
                 // select the password
                 // http://stackoverflow.com/questions/6139107/programatically-select-text-in-a-contenteditable-html-element/13641884#13641884
                 document.execCommand('selectAll', false, null);
-                // let user know it has copied
-                $target.textContent = "selected! :)";
-                // clear previous timer set
-                if (window.copied_msg_timer) clearTimeout(window.copied_msg_timer);
-                // create a new timer, attach to window for easy access
-                window.copied_msg_timer = setTimeout(function() {
-                    // reset btn text after timer finishes
-                    $target.textContent = "select";
-                }, 1500);
             }
         }
     };
@@ -412,7 +422,8 @@ document.onreadystatechange = function() {
             $text_password = dom.getElementById("text-password"),
             $app_actions_cont = dom.getElementById("app-actions-cont"),
             $btn_copy = dom.getElementById("btn-action-copy"),
-            $btn_select = dom.getElementById("btn-action-select");
+            $btn_select = dom.getElementById("btn-action-select"),
+            $btn_generate = dom.getElementById("btn-action-generate");
         // [app.events.keystrokes]
         // check inputed password length
         $length_input.addEventListener("input", handlers.length_check);
