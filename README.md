@@ -8,7 +8,8 @@ Generator can be used live [here](https://cgabriel5.github.io/password-generator
 
 ### Issues
 
-Copy to clipboard not supported on mobile.
+- ~~Copy to clipboard not supported on mobile.~~
+- Browsers that do not support the copy to clipboard functionality will default to selecting the newly generated password so the user can then manually copy it.
 
 ### Contributing
 
