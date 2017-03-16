@@ -19,7 +19,7 @@ See how to contribute [here](https://github.com/cgabriel5/password-generator/blo
 
 ### TODO
 
-- [ ] Make alternate method allowing mobile users to easily copy generated password
+- [x] Make alternate method allowing mobile users to easily copy generated password
 
 ### License
 
