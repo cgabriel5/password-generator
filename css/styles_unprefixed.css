@@ -14,9 +14,9 @@ html {
 }
 
 body {
-    font: 400 16px/1.5 Lato;
     margin: 0;
     color: #2d3c49;
+    font: 400 16px/1.5 Lato;
 }
 
 ::-moz-selection {

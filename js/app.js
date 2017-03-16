@@ -1,22 +1,11 @@
 document.onreadystatechange = function() {
+
     "use strict";
-    /* [functions.utils] */
-    /**
-     * @description [detects browsers localStorage]
-     * @source [https://mathiasbynens.be/notes/localstorage-pattern]
-     * @source-complementary [http://diveintohtml5.info/storage.html]
-     */
-    var storage = (function() {
-        var uid = new Date(),
-            storage, result;
-        try {
-            (storage = window.localStorage).setItem(uid, uid);
-            result = storage.getItem(uid) == uid;
-            storage.removeItem(uid);
-            return result && storage;
-        } catch (exception) {}
-    }());
-    /* [functions.app] */
+
+    // =============================== Variables
+
+    // =============================== Main Functions
+
     /**
      * @description [Shows save option if localStorage available.]
      */
@@ -30,7 +19,7 @@ document.onreadystatechange = function() {
         if (!localStorage.length) return;
         // get the save options classes
         var classes = $option_save.classList;
-        // add/remove neccessary classes
+        // add/remove necessary classes
         classes.remove("option-off");
         classes.add("option-on-blue");
         // reset the options based on local storage
@@ -129,37 +118,9 @@ document.onreadystatechange = function() {
         // reset the length input
         $length_input.value = "20";
     }
+
     /**
-     * @description [Shuffles provided array.]
-     * @source [http://stackoverflow.com/questions/6274339/how-can-i-shuffle-an-array-in-javascript]
-     * @param {Array} array [The array to shuffle.]
-     * @return {Array} array [Returns provided array now shuffled.]
-     */
-    function shuffle(array) {
-        var counter = array.length;
-        // While there are elements in the array
-        while (counter > 0) {
-            // Pick a random index
-            var index = Math.floor(Math.random() * counter);
-            // Decrease counter by 1
-            counter--;
-            // And swap the last element with it
-            var temp = array[counter];
-            array[counter] = array[index];
-            array[index] = temp;
-        }
-        return array;
-    }
-    /**
-     * @description [Return a random item from an array.]
-     * @param  {Array} provided_array [The array to get item from.]
-     * @return {String} [In this case a character will be returned.]
-     */
-    function random_item(provided_array) {
-        return provided_array[Math.floor(Math.random() * provided_array.length)];
-    }
-    /**
-     * @ description [Generates password.]
+     * @description [Generates password.]
      * @return {String} password [The generated password.]
      */
     function generate_password() {
@@ -177,7 +138,7 @@ document.onreadystatechange = function() {
         return password.join("");
     }
     /**
-     * @ description [Embeds the generated password into page.]
+     * @description [Embeds the generated password into page.]
      */
     function embed_password() {
         // generate password
@@ -281,7 +242,10 @@ document.onreadystatechange = function() {
         // show the generate button
         $btn_generate.classList.remove("none");
     }
-    /* [functions.event.handlers] */
+    /**
+     * @description [Object containing handler functions.]
+     * @type {Object}
+     */
     var handlers = {
         /**
          * @description [Checks inputed value. Keeps it to numbers and
@@ -362,7 +326,7 @@ document.onreadystatechange = function() {
             var target = e.target;
             // check if element is an option element
             if (target.classList.contains("option-status") || target.classList.contains("fa-check")) {
-                // reset target var to parent of actual checkmark is clicked
+                // reset target var to parent if actual checkmark is clicked
                 if (target.classList.contains("fa-check")) {
                     target = target.parentNode;
                 }
@@ -409,11 +373,61 @@ document.onreadystatechange = function() {
             }
         }
     };
-    /* [app.main] */
-    if (document.readyState == "complete") { // all resources have loaded
-        // [app.variables.dom]
+
+    // =============================== Helper Functions
+
+    /**
+     * @description [detects browsers localStorage]
+     * @source [https://mathiasbynens.be/notes/localstorage-pattern]
+     * @source-complementary [http://diveintohtml5.info/storage.html]
+     */
+    var storage = (function() {
+        var uid = new Date(),
+            storage, result;
+        try {
+            (storage = window.localStorage).setItem(uid, uid);
+            result = storage.getItem(uid) == uid;
+            storage.removeItem(uid);
+            return result && storage;
+        } catch (exception) {}
+    }());
+    /**
+     * @description [Shuffles provided array.]
+     * @source [http://stackoverflow.com/questions/6274339/how-can-i-shuffle-an-array-in-javascript]
+     * @param {Array} array [The array to shuffle.]
+     * @return {Array} array [Returns provided array now shuffled.]
+     */
+    function shuffle(array) {
+        var counter = array.length;
+        // While there are elements in the array
+        while (counter > 0) {
+            // Pick a random index
+            var index = Math.floor(Math.random() * counter);
+            // Decrease counter by 1
+            counter--;
+            // And swap the last element with it
+            var temp = array[counter];
+            array[counter] = array[index];
+            array[index] = temp;
+        }
+        return array;
+    }
+    /**
+     * @description [Return a random item from an array.]
+     * @param  {Array} provided_array [The array to get item from.]
+     * @return {String} [In this case a character will be returned.]
+     */
+    function random_item(provided_array) {
+        return provided_array[Math.floor(Math.random() * provided_array.length)];
+    }
+
+    // =============================== [Line Separator]
+
+    // all resources have loaded (document + sub-resources)
+    if (document.readyState == "complete") {
+
         // because this is a single page app just...
-        // cache neccessary elements (out of simplicity)
+        // cache necessary elements (out of simplicity)
         var dom = document,
             $length_input = dom.getElementById("password-length"),
             $option_save = dom.getElementById("option-save"),
@@ -424,23 +438,26 @@ document.onreadystatechange = function() {
             $btn_copy = dom.getElementById("btn-action-copy"),
             $btn_select = dom.getElementById("btn-action-select"),
             $btn_generate = dom.getElementById("btn-action-generate");
-        // [app.events.keystrokes]
+
         // check inputed password length
         $length_input.addEventListener("input", handlers.length_check);
         $length_input.addEventListener("paste", handlers.length_check);
+
         // increase/decrease input value on respective keypress
         $length_input.addEventListener("keydown", handlers.input_length_keypress);
-        // [app.events.clicks]
+
         // toggle generator options
         dom.addEventListener("click", handlers.toggle_option);
         // listen to button clicks
         dom.addEventListener("click", handlers.btn_clicks);
-        // [app.functions.main]
+
         // generate password + embed to page
         embed_password();
         // initialize clipboardjs
         init_clipboard();
         // initialize local storage
         init_localstorage();
+
     }
+
 };
