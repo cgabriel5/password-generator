@@ -1,0 +1,118 @@
+<div class="main-cont animate-fadein">
+    <!-- generated password -->
+    <div class="head-cont">
+        <div class="head-cont-center">
+            <div class="text-label">
+                PASSWORD
+            </div>
+            <div class="password-cont">
+                <span class="text-password text-code" id="text-password" contenteditable="true" spellcheck="false"></span>
+            </div>
+        </div>
+    </div>
+    <!-- generator options -->
+    <div class="options-cont">
+        <div class="app-actions-cont unselectable undraggable" id="app-actions-cont">
+            <div class="btn btn-blue none" data-clipboard-target="#text-password" id="btn-action-copy">
+                copy
+            </div>
+            <div class="btn btn-blue none" id="btn-action-select">
+                select
+            </div>
+            <div class="btn btn-gray none" id="btn-action-generate">
+                generate
+            </div>
+        </div>
+        <div class="options-list-cont">
+            <div class="text-label">
+                OPTIONS
+            </div>
+            <div class="option-cont none" id="option-cont-store">
+                <div class="option-label">
+                    Save Options For Later <span class="option-label-reset unselectable undraggable" id="option-label-reset">reset</span>
+                </div>
+                <div class="option-status option-off" data-option-name="preferences" id="option-save">
+                    <i aria-hidden="true" class="fa fa-check"></i>
+                </div>
+            </div>
+            <div class="option-cont">
+                <div class="option-label">
+                    Length <span class="option-label-charset text-code">between 1 &amp; 1024</span>
+                </div>
+                <input class="password-length text-code" id="password-length" maxlength="6" placeholder="####" type="text" value="20">
+            </div>
+            <div class="option-cont">
+                <div class="option-label">
+                    Uppercase Letters <span class="option-label-charset text-code">A-Z</span>
+                </div>
+                <div class="option-status option-on" data-option-name="uppercase">
+                    <i aria-hidden="true" class="fa fa-check"></i>
+                </div>
+            </div>
+            <div class="option-cont">
+                <div class="option-label">
+                    Lowercase Letters <span class="option-label-charset text-code">a-z</span>
+                </div>
+                <div class="option-status option-on" data-option-name="lowercase">
+                    <i aria-hidden="true" class="fa fa-check"></i>
+                </div>
+            </div>
+            <div class="option-cont">
+                <div class="option-label">
+                    Numbers <span class="option-label-charset text-code">0-9</span>
+                </div>
+                <div class="option-status option-on" data-option-name="numbers">
+                    <i aria-hidden="true" class="fa fa-check"></i>
+                </div>
+            </div>
+            <div class="option-cont">
+                <div class="option-label">
+                    Punctuation <span class="option-label-charset text-code">.?!,;:-'"</span>
+                </div>
+                <div class="option-status option-on" data-option-name="punctuation">
+                    <i aria-hidden="true" class="fa fa-check"></i>
+                </div>
+            </div>
+            <div class="option-cont">
+                <div class="option-label">
+                    Enclosures <span class="option-label-charset text-code">(){}[]&lt;&gt;</span>
+                </div>
+                <div class="option-status option-on" data-option-name="enclosures">
+                    <i aria-hidden="true" class="fa fa-check"></i>
+                </div>
+            </div>
+            <div class="option-cont">
+                <div class="option-label">
+                    Symbols <span class="option-label-charset text-code">@#$%^&amp;*</span>
+                </div>
+                <div class="option-status option-on" data-option-name="symbols">
+                    <i aria-hidden="true" class="fa fa-check"></i>
+                </div>
+            </div>
+            <div class="option-cont">
+                <div class="option-label">
+                    Ambiguous Chars. <span class="option-label-charset text-code">~`_=+\|/</span>
+                </div>
+                <div class="option-status option-on" data-option-name="ambiguous">
+                    <i aria-hidden="true" class="fa fa-check"></i>
+                </div>
+            </div>
+            <div class="option-cont">
+                <div class="option-label">
+                    Similar Chars. <span class="option-label-charset text-code">1iIlL0oO</span>
+                </div>
+                <div class="option-status option-on" data-option-name="similar">
+                    <i aria-hidden="true" class="fa fa-check"></i>
+                </div>
+            </div>
+            <div class="option-cont">
+                <div class="option-label">
+                    Spaces
+                </div>
+                <div class="option-status option-off" data-option-name="spaces">
+                    <i aria-hidden="true" class="fa fa-check"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
