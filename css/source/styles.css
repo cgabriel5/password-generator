@@ -177,8 +177,8 @@ input::selection {
 }
 
 .option-off {
-    color: #d8d8d8;
-    background: #efefef;
+    color: #adadad;
+    background: #eaeaea;
 }
 
 .option-on {
