@@ -98,7 +98,9 @@
         // import whats needed
         // keep track of the options values
         var options = {
+            // user stored generator options
             "user": {},
+            // default generator option values
             "defaults": {
                 "preferences": false,
                 "ambiguous": true,
@@ -120,7 +122,9 @@
             // allowed to store options in localStorage?
             "store": false
         };
+        // will contain HTMLElement option elements
         var $options = {};
+        // the Monitor
         var monitor;
         // export to access in other modules
         this[name]["options"] = options;
