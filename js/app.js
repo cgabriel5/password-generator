@@ -198,7 +198,7 @@
         // use a Monitor to listen in on changes to the users object
         var monitor = new Monitor(null, options);
         // listen to the all user.* paths except for the user.plength path
-        monitor.on(/^user(?!.plength).*/, function(path, type, newValue, oldValue, time) {
+        monitor.on(/^user(?!.plength).*/, function(filter, path, type, newValue, oldValue, time, conditions) {
             // ignore deletions. deletions will be triggered when the generator is reset.
             // these deletions are not needed to be acted upon
             if (type === "delete") return;
@@ -208,8 +208,31 @@
             // switch_option => state(on/off), optionElement, Boolean(is it the preferences option)
             switch_option((newValue ? "on" : "off"), $options[option_name], (option_name === "preferences"));
         });
+        // listen to the user.plength property for any changes to it
+        monitor.on("user.plength", function(filter, path, type, newValue, oldValue, time, conditions) {
+            // ignore deletions. deletions will be triggered when the generator is reset.
+            // these deletions are not needed to be acted upon
+            if (type === "delete") return;
+            // set the length on the input element
+            $$.length_input.value = newValue;
+            // store the options in localStorage
+            store_options();
+        });
+        // listen to the user.preferences property for any changes to it
+        monitor.on("user.preferences", function(filter, path, type, newValue, oldValue, time, conditions) {
+            // ignore deletions. deletions will be triggered when the generator is reset.
+            // these deletions are not needed to be acted upon
+            if (type === "delete") return;
+            // clear the localStorage
+            if (newValue === false) localStorage.clear();
+            // enable/disabled localStorage storing of options
+            monitor.set("store", newValue);
+        });
         // listen to the user.hexonly path
-        monitor.on(/^user.hexonly/, function(path, type, newValue, oldValue, time) {
+        monitor.on("user.hexonly", function(filter, path, type, newValue, oldValue, time, conditions) {
+            // prevent Maximum call stack size exceeded error by using a condition
+            // in this case, when the skip property is provided the function returns
+            if (conditions.skip) return;
             // only listen to update changes
             if (type === "update") {
                 // get all options but preferences, plength, hexonly
@@ -225,22 +248,17 @@
             }
         });
         // listen to the all user.* paths except for the user.preferences, user.hexonly, and user.plength paths
-        monitor.on(/^user(?!.preferences|.hexonly|.plength).*/, function(path, type, newValue, oldValue, time) {
-            // only listen to update changes
-            if (type === "update") {
-                // only when the new value is equal to true
-                if (newValue === true) {
-                    // to not trigger the monitor, normally update the value
-                    // without the use if the monitor.set() method
-                    monitor.object.user.hexonly = false;
-                    // because the monitor.set() method is not being invoked
-                    // the UI switch must also be done here
-                    switch_option("off", $options["hexonly"]);
-                }
+        monitor.on(/^user(?!.preferences|.hexonly|.plength).*/, function(filter, path, type, newValue, oldValue, time, conditions) {
+            // only when the new value is equal to true (option is turned on)
+            // and the monitor change is of type update
+            if (type === "update" && newValue === true) {
+                monitor.set("user.hexonly", false, {
+                    "skip": true
+                });
             }
         });
         // listen to the all user.* paths for changes
-        monitor.on(/^user\.*/, function(path, type, newValue, oldValue, time) {
+        monitor.on(/^user\.*/, function(filter, path, type, newValue, oldValue, time, conditions) {
             // ignore deletions. deletions will be triggered when the generator is reset.
             // these deletions are not needed to be acted upon
             if (type === "delete") return;
@@ -272,7 +290,7 @@
             monitor.set("UI_enabled", true_value_exists);
         });
         // listen to the UI_enabled property for any changes to it
-        monitor.on("UI_enabled", function(path, type, newValue, oldValue, time) {
+        monitor.on("UI_enabled", function(filter, path, type, newValue, oldValue, time, conditions) {
             if (!newValue) { // all options off, disable the generator UI
                 $$.text_password.textContent = "• • • • • • • • • •";
                 $$.text_password.setAttribute("disabled", true);
@@ -285,29 +303,9 @@
             }
         });
         // listen to the active property for any changes to it
-        monitor.on("active", function(path, type, newValue, oldValue, time) {
+        monitor.on("active", function(filter, path, type, newValue, oldValue, time, conditions) {
             // embed a new password when the generator is activated
             if (newValue === true) embed_password();
-        });
-        // listen to the user.plength property for any changes to it
-        monitor.on("user.plength", function(path, type, newValue, oldValue, time) {
-            // ignore deletions. deletions will be triggered when the generator is reset.
-            // these deletions are not needed to be acted upon
-            if (type === "delete") return;
-            // set the length on the input element
-            $$.length_input.value = newValue;
-            // store the options in localStorage
-            store_options();
-        });
-        // listen to the user.preferences property for any changes to it
-        monitor.on("user.preferences", function(path, type, newValue, oldValue, time) {
-            // ignore deletions. deletions will be triggered when the generator is reset.
-            // these deletions are not needed to be acted upon
-            if (type === "delete") return;
-            // clear the localStorage
-            if (newValue === false) localStorage.clear();
-            // enable/disabled localStorage storing of options
-            monitor.set("store", newValue);
         });
         /**
          * @description [Turns the option off or on, UI wise.]
@@ -396,8 +394,12 @@
             // loop over the defaults
             for (var option in defaults) {
                 if (defaults.hasOwnProperty(option)) {
+                    // add a condition to the hexonly path
+                    var conditions = (option === "hexonly") ? {
+                        "skip": true
+                    } : null;
                     // store the option in the user.<object>
-                    monitor.set("user." + option, defaults[option]);
+                    monitor.set("user." + option, defaults[option], conditions);
                 }
             }
         }
