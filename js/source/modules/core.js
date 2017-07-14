@@ -2,219 +2,262 @@ app.module("core", function(modules, name) {
     // import whats needed
     var $$ = modules.$$;
     var utils = modules.utils,
-        storage = utils.storage,
-        shuffle = utils.shuffle,
-        random_item = utils.random_item;
+        local_storage = utils.storage;
+    var libs = modules.libs,
+        randomString = libs.randomString,
+        Monitor = libs.Monitor;
+    var globals = modules.globals,
+        options = globals.options,
+        $options = globals.$options;
     /**
-     * @description [Shows save option if localStorage available.]
+     * @description [Self-invoked function that populates the $options object with
+     *               a map of option_name: $option_element for ease of use throughout
+     *               other functions.]
+     * @return {Undefined} [Nothing is returned.]
      */
-    function init_localstorage() {
-        // return if no localStorage
-        if (!storage) return;
-        // show save options container
-        $$.option_cont_store.classList.remove("none");
-        // if localStorage present but no options saved...
-        // ...default options will be turned on.
-        if (!localStorage.length) return;
-        // get the save options classes
-        var classes = $$.option_save.classList;
-        // add/remove necessary classes
-        classes.remove("option-off");
-        classes.add("option-on-blue");
-        // reset the options based on local storage
-        restore_options();
-        all_options_off(); // enable the action buttons
-    }
-    /**
-     * @description [If user saved his/her preferences options are restored to match preferences.]
-     */
-    function restore_options() {
-        // set options to match local storage
-        for (var i = 0, l = $$.option_elements.length; i < l; i++) {
-            // skip the first one, "save options"
-            if (i === 0) continue;
-            // cache current option + its classes
-            var option = $$.option_elements[i],
-                classes = option.classList;
-            // get the user preference localStorage
-            if (localStorage.getItem(option.dataset.optionName) === "true") { // option on
-                classes.remove("option-off");
-                classes.add("option-on");
-            } else { // option turned off
-                classes.remove("option-on");
-                classes.add("option-off");
+    (function build_options() {
+        // get the option elements
+        var elements = $$.option_elements;
+        // loop over the elements
+        for (var i = 0, l = elements.length; i < l; i++) {
+            // cache the current option element
+            var option = elements[i];
+            // add the option_name: $option_element to the $options object
+            $options[option.dataset.optionName] = option;
+        }
+    })();
+    // use a Monitor to listen in on changes to the users object
+    var monitor = new Monitor(null, options);
+    // listen to the all user.* paths except for the user.plength path
+    monitor.on(/^user(?!.plength).*/, function(filter, path, type, newValue, oldValue, time, conditions) {
+        // ignore deletions. deletions will be triggered when the generator is reset.
+        // these deletions are not needed to be acted upon
+        if (type === "delete") return;
+        // get the option name
+        var option_name = path.replace("user.", "");
+        // modify the option's UI.
+        // switch_option => state(on/off), optionElement, Boolean(is it the preferences option)
+        switch_option((newValue ? "on" : "off"), $options[option_name], (option_name === "preferences"));
+    });
+    // listen to the user.plength property for any changes to it
+    monitor.on("user.plength", function(filter, path, type, newValue, oldValue, time, conditions) {
+        // ignore deletions. deletions will be triggered when the generator is reset.
+        // these deletions are not needed to be acted upon
+        if (type === "delete") return;
+        // set the length on the input element
+        $$.length_input.value = newValue;
+        // store the options in localStorage
+        store_options();
+    });
+    // listen to the user.preferences property for any changes to it
+    monitor.on("user.preferences", function(filter, path, type, newValue, oldValue, time, conditions) {
+        // ignore deletions. deletions will be triggered when the generator is reset.
+        // these deletions are not needed to be acted upon
+        if (type === "delete") return;
+        // clear the localStorage
+        if (newValue === false) localStorage.clear();
+        // enable/disabled localStorage storing of options
+        monitor.set("store", newValue);
+    });
+    // listen to the user.hexonly path
+    monitor.on("user.hexonly", function(filter, path, type, newValue, oldValue, time, conditions) {
+        // prevent Maximum call stack size exceeded error by using a condition
+        // in this case, when the skip property is provided the function returns
+        if (conditions.skip) return;
+        // only listen to update changes
+        if (type === "update") {
+            // get all options but preferences, plength, hexonly
+            var list = Object.keys(monitor.object.user)
+                .filter(function(option) {
+                    // return all but the following options
+                    return !-~["preferences", "hexonly", "plength"].indexOf(option);
+                });
+            // loop over the options list and set its value to false
+            for (var i = 0, l = list.length; i < l; i++) {
+                monitor.set("user." + list[i], false);
             }
         }
-        // reset the length input
-        $$.length_input.value = localStorage.getItem("plength");
-    }
-    /**
-     * @description [If all options are turned off disable copy and generate buttons.]
-     */
-    function all_options_off() {
-        // define counter
-        // 2 is subtracted to account for "save option" & "similar chars"
-        var off_counter = $$.option_elements.length - 2;
-        for (var i = 0, l = $$.option_elements.length; i < l; i++) {
-            // skip the first one, "save options"
-            if (i === 0) continue;
-            // cache current option
-            var option = $$.option_elements[i];
-            // decrease counter by 1 for each turned off option
-            if (option.dataset.optionName !== "similar" && !option.classList.contains("option-on")) off_counter--;
+    });
+    // listen to the all user.* paths except for the user.preferences, user.hexonly, and user.plength paths
+    monitor.on(/^user(?!.preferences|.hexonly|.plength).*/, function(filter, path, type, newValue, oldValue, time, conditions) {
+        // only when the new value is equal to true (option is turned on)
+        // and the monitor change is of type update
+        if (type === "update" && newValue === true) {
+            monitor.set("user.hexonly", false, {
+                "skip": true
+            });
         }
-        if (!off_counter) { // all options off
+    });
+    // listen to the all user.* paths for changes
+    monitor.on(/^user\.*/, function(filter, path, type, newValue, oldValue, time, conditions) {
+        // ignore deletions. deletions will be triggered when the generator is reset.
+        // these deletions are not needed to be acted upon
+        if (type === "delete") return;
+        // store the users' options in localStorage
+        store_options();
+        // if the active property is set to true create a new
+        // password an options value changes
+        if (monitor.object.active) embed_password();
+        // check whether UI needs to be disabled
+        // cache the users object
+        var values = monitor.object.user;
+        // flag indicating whether an option with a value of true exists
+        var true_value_exists = false;
+        // loop over the values
+        for (var value in values) {
+            if (values.hasOwnProperty(value)) {
+                // skip the following options as they are allowed on (set to true)
+                if (-~["preferences", "similar", "plength"].indexOf(value)) continue;
+                // for any other option that is set to true...set the flag to true
+                // and break out of the loop. this indicate that the UI does not need
+                // to be disabled. as there is an active option.
+                if (values[value] === true) {
+                    true_value_exists = true;
+                    break;
+                }
+            }
+        }
+        // if true_value_exists is set to true there  toggle UI
+        monitor.set("UI_enabled", true_value_exists);
+    });
+    // listen to the UI_enabled property for any changes to it
+    monitor.on("UI_enabled", function(filter, path, type, newValue, oldValue, time, conditions) {
+        if (!newValue) { // all options off, disable the generator UI
             $$.text_password.textContent = "• • • • • • • • • •";
             $$.text_password.setAttribute("disabled", true);
             $$.app_actions_cont.classList.add("disabled");
             $$.length_input.classList.add("disabled");
-        } else {
+        } else { // enable the UI
             $$.text_password.removeAttribute("disabled", false);
             $$.app_actions_cont.classList.remove("disabled");
             $$.length_input.classList.remove("disabled");
         }
+    });
+    // listen to the active property for any changes to it
+    monitor.on("active", function(filter, path, type, newValue, oldValue, time, conditions) {
+        // embed a new password when the generator is activated
+        if (newValue === true) embed_password();
+    });
+    /**
+     * @description [Turns the option off or on, UI wise.]
+     * @param  {String} status [The status the option should be set to.]
+     * @return {Undefined}     [Nothing is returned.]
+     */
+    function switch_option(status, option, is_blue) {
+        // reset the is_blue flag
+        is_blue = (!is_blue ? "" : "-blue");
+        // get the classes list
+        var classes = option.classList;
+        var prefix = "option-";
+        // switch option "on"
+        if (status === "on") {
+            classes.remove(prefix + "off");
+            classes.add(prefix + "on" + is_blue);
+        } else if (status === "off") { // switch option "off"
+            classes.remove(prefix + "on" + is_blue);
+            classes.add(prefix + "off");
+        }
     }
     /**
-     * @description [Stores options in localStorage.]
+     * @description [Stores the users preferences in localStorage if localStorage is available
+     *               and save option is on.]
+     * @return {Undefined} [Nothing is returned.]
      */
     function store_options() {
-        // return and don't save anything if "save option" is turned off.
-        if ($$.option_save.classList.contains("option-off")) return;
-        // loop through options, store status in localStorage
-        for (var i = 0, l = $$.option_elements.length; i < l; i++) {
-            // skip the first one, "save options"
-            if (i === 0) continue;
-            // cache current option
-            var option = $$.option_elements[i];
-            localStorage.setItem(option.dataset.optionName, (option.classList.contains("option-off") ? false : true));
+        // only store when the save preferences option is set and if storage allowed
+        if (monitor.object.store === false || !local_storage) return;
+        // get the options
+        var options = monitor.object.user;
+        for (var option in options) {
+            if (options.hasOwnProperty(option)) {
+                // skip the plength as this is not a Boolean value.
+                // it is stored later
+                if (option === "plength") continue;
+                // all other options are Booleans and can be easily stored.
+                localStorage.setItem(option, options[option]);
+            }
         }
-        // reset the length input
+        // store the length
         localStorage.setItem("plength", $$.length_input.value);
     }
     /**
-     * @description [Resets options to default status. Everything on but spaces and save option turned off.
-     *               Input length set to default 20 value.]
+     * @description [If user saved preferences, use the localStorage option values.]
+     * @return {Undefined} [Nothing is returned.]
      */
-    function reset_options() {
-        for (var i = 0, l = $$.option_elements.length; i < l; i++) {
-            // cache current option classes
-            var classes = $$.option_elements[i].classList;
-            if (i === 0) {
-                // the first one is the save option
-                // must be blue
-                classes.remove("option-on-blue");
-                classes.add("option-off");
-            } else {
-                // everything else on
-                classes.remove("option-off");
-                classes.add("option-on");
-            }
-            if (l - 1 === i) {
-                // the last one must be turned off
-                // spaces off my default
-                classes.remove("option-on");
-                classes.add("option-off");
+    function restore_options() {
+        // loop over the localStorage to restore the options
+        for (var option in localStorage) {
+            if (localStorage.hasOwnProperty(option)) {
+                var value = localStorage.getItem(option);
+                if (option === "plength") {
+                    // plength is not a Boolean so the value can just be used as is
+                    monitor.set("user." + option, value);
+                } else {
+                    // because localStorage values are stored as strings
+                    // the value must be turned into a Boolean
+                    monitor.set("user." + option, (value === "true") ? true : false);
+                }
             }
         }
-        // reset the length input
-        $$.length_input.value = "20";
-        all_options_off();
-    }
-    /**
-     * @description [Generates password.]
-     * @return {String} password [The generated password.]
-     */
-    function generate_password() {
-        // build random string from user options
-        var charset_array = build_charset(get_options());
-        // get the user provided password length
-        var password_length = parseInt($$.length_input.value, 10);
-        var password = [];
-        // start building password...
-        while (password_length >= 1) {
-            // shuffle array
-            password.push(random_item(shuffle(charset_array)));
-            password_length--;
-        }
-        return password.join("");
     }
     /**
      * @description [Embeds the generated password into page.]
+     * @return {Undefined} [Nothing is returned.]
      */
     function embed_password() {
-        // generate password
-        var password = generate_password();
-        // embed password
-        $$.text_password.textContent = password;
+        // get the user options + generate password + embed password
+        var options = monitor.object.user;
+        // use Object.assign to create a new object with the property length
+        // attached to it. plength is used in the user.<options> object as
+        // localStorage uses the length property name to denote how many items
+        // it contains.
+        $$.text_password.textContent = randomString(Object.assign({
+            "length": options.plength
+        }, options));
     }
     /**
-     * @description [Builds the usable character set. This depends on the options the user specified.]
-     * @param  {Object} options
-     * @return {Array} [An array containing all possible characters to build passwords from.]
+     * @description [Grabs the defaults options and injects them into the monitor.user object.]
+     * @return {Undefined} [Nothing is returned.]
      */
-    function build_charset(options) {
-        // cache options
-        var ambiguous = options.ambiguous,
-            enclosures = options.enclosures,
-            lowercase = options.lowercase,
-            numbers = options.numbers,
-            punctuation = options.punctuation,
-            similar = options.similar,
-            spaces = options.spaces,
-            symbols = options.symbols,
-            uppercase = options.uppercase;
-        // define charsets
-        var charset_letters = "abcdefghijklmnopqrstuvwxyz",
-            charset_numbers = "0123456789",
-            charset_punctuation = ".?!,;:-'\"",
-            charset_enclosures = "(){}[]<>",
-            charset_symbols = "@#$%^&*",
-            charset_ambiguous = "~`_=+\\|/",
-            charset_similar = "1iIlL0oO",
-            charset_space = " ";
-        // start building string
-        var string = "";
-        if (uppercase) string += charset_letters.toUpperCase();
-        if (lowercase) string += charset_letters;
-        if (numbers) string += charset_numbers;
-        if (punctuation) string += charset_punctuation;
-        if (enclosures) string += charset_enclosures;
-        if (symbols) string += charset_symbols;
-        if (ambiguous) string += charset_ambiguous;
-        if (spaces) string += charset_space;
-        // remove similar characters if flag provided
-        if (!similar) string = string.replace(/[1iIlL0oO]/g, "");
-        // finally return the built string in an array
-        return string.split("");
-    }
-    /**
-     * @description [Makes an object containing the generator options and whether they are on or off.]
-     * @return {Object} options [Contains value:key pairs, i.e. "numbers":"true", "lowercase":"false".
-     *                           for all generator options.]
-     */
-    function get_options() {
-        // define options object
-        var options = {};
-        // loop through every options element...
-        for (var i = 0, l = $$.option_elements.length; i < l; i++) {
-            // cache current option
-            var option = $$.option_elements[i];
-            // add option and its status to options object
-            options[option.dataset.optionName] = (option.classList.contains("option-on") ? true : false);
+    function turn_on_defaults() {
+        // get the default options
+        var defaults = options.defaults;
+        // loop over the defaults
+        for (var option in defaults) {
+            if (defaults.hasOwnProperty(option)) {
+                // add a condition to the hexonly path
+                var conditions = (option === "hexonly") ? {
+                    "skip": true
+                } : null;
+                // store the option in the user.<object>
+                monitor.set("user." + option, defaults[option], conditions);
+            }
         }
-        return options;
     }
     /**
-     * @description [Checks whether browser supports copying to clipboard.]
-     * @return {Boolean} [description]
+     * @description [Resets the generator to its default settings and clears out the monitor cache.]
+     * @return {Undefined} [Nothing is returned.]
      */
-    function is_copy_supported() {
-        // https://github.com/zenorocha/clipboard.js/issues/337
-        // http://jsfiddle.net/the_ghost/679drp3r/
-        return (!!document.queryCommandSupported && !!document.queryCommandSupported("copy"));
+    function reset_options() {
+        // get the defaults
+        var defaults = monitor.object.defaults;
+        // loop over the options and unset each
+        Object.keys(defaults)
+            .forEach(function(option) {
+                monitor.unset("user." + option);
+            });
+        // deactivate the generator
+        monitor.set("active", false);
+        // clear the monitor cache
+        monitor.cache = {};
+        // reset the values to defaults
+        turn_on_defaults();
+        // reactivate the generator
+        monitor.set("active", true);
     }
     /**
      * @description [Sets up ClipboardJS.]
+     * @return {Undefined} [Nothing is returned.]
      */
     function init_clipboard() {
         // only setup clipboard if browser supports copying
@@ -244,16 +287,45 @@ app.module("core", function(modules, name) {
         // show the generate button
         $$.btn_generate.classList.remove("none");
     }
+    /**
+     * @description [Checks whether browser supports copying to clipboard.]
+     * @return {Boolean} [description]
+     */
+    function is_copy_supported() {
+        // https://github.com/zenorocha/clipboard.js/issues/337
+        // http://jsfiddle.net/the_ghost/679drp3r/
+        return (!!document.queryCommandSupported && !!document.queryCommandSupported("copy"));
+    }
+    /**
+     * @description [Depending on whether localStorage is supported, it sets the generators options
+     *               either using the default values or the locally stored values.]
+     * @return {Undefined} [Nothing is returned.]
+     */
+    function init_localstorage() {
+        // if localStorage is not supported don't show the save preferences option
+        if (local_storage) {
+            // show save options container, as localStorage is supported
+            $$.option_cont_store.classList.remove("none");
+            // if no options are saved...default options will be turned on.
+            if (!localStorage.length) {
+                // turn on the default options
+                turn_on_defaults();
+            } else {
+                // reset the options based on local storage
+                restore_options();
+            }
+        } else {
+            // no localStorage support
+            turn_on_defaults();
+        }
+        // activate the generator
+        monitor.set("active", true);
+    }
     // export to access in other modules
-    this[name]["init_localstorage"] = init_localstorage;
-    this[name]["restore_options"] = restore_options;
-    this[name]["all_options_off"] = all_options_off;
-    this[name]["store_options"] = store_options;
+    this[name]["turn_on_defaults"] = turn_on_defaults;
     this[name]["reset_options"] = reset_options;
-    this[name]["generate_password"] = generate_password;
     this[name]["embed_password"] = embed_password;
-    this[name]["build_charset"] = build_charset;
-    this[name]["get_options"] = get_options;
-    this[name]["is_copy_supported"] = is_copy_supported;
     this[name]["init_clipboard"] = init_clipboard;
+    this[name]["init_localstorage"] = init_localstorage;
+    this["globals"]["monitor"] = monitor;
 }, "complete");

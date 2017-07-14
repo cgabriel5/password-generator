@@ -2,10 +2,12 @@ app.module("events", function(modules, name) {
     // import whats needed
     var $$ = modules.$$;
     var core = modules.core,
-        store_options = core.store_options,
         embed_password = core.embed_password,
-        all_options_off = core.all_options_off,
         reset_options = core.reset_options;
+    var libs = modules.libs,
+        Funnel = libs.Funnel;
+    var globals = modules.globals,
+        monitor = globals.monitor;
     /**
      * @description [Object containing handler functions.]
      * @type {Object}
@@ -24,20 +26,25 @@ app.module("events", function(modules, name) {
                 selection_end = input.selectionEnd;
             // cache input value
             var val = input.value.trim();
-            // if value is empty stop function
-            if (val === "") return;
-            // replace everything but numbers
-            input.value = val.replace(/[^0-9]/g, "");
+            // replace everything but numbers to check if empty...
+            // if value is empty stop function, store the new length, and return
+            if (val.replace(/[^0-9]/g, "") === "") {
+                monitor.set("user.plength", 0);
+                input.value = "";
+                return;
+            }
             // check if number is with in allowed range
             var parse_value = parseInt(val, 10);
             // bigger than 1024 reset to 1024
-            if (parse_value > 1024) input.value = "1024";
+            if (parse_value > 1024) parse_value = 1024;
             // smaller than 1, i.e. 0, reset to 1
-            if (parse_value < 1) input.value = "1";
+            if (parse_value < 1) parse_value = 1;
+            // set the new input value
+            input.value = parse_value;
             // reset the caret to the position that it was
             input.setSelectionRange(selection_start, selection_end);
-            // store the changes to local storage
-            store_options();
+            // store the new length
+            monitor.set("user.plength", parse_value);
         },
         /**
          * @description [Increases/decreases length and keeps it
@@ -59,19 +66,14 @@ app.module("events", function(modules, name) {
                 var val = input.value;
                 // parsed value
                 var parse_value = parseInt(val, 10);
-                // decrease value if key_code is 40
-                if (key_code === 40) {
-                    // if parsed value is less than 1 reset to 1
-                    if (parse_value < 2) input.value = 1;
-                    // decrease value by 1
-                    else input.value = parse_value - 1;
-                } else {
-                    // increase the value
-                    // if parsed value is greater than 1024 reset to 1024
-                    if (parse_value > 1023) input.value = 1024;
-                    // increase value by 1
-                    else input.value = parse_value + 1;
-                }
+                // if parsed value is < than 1 reset to 1...else decrease value by 1
+                if (key_code === 40) parse_value = ((parse_value < 2) ? 1 : (parse_value - 1));
+                // if parsed value is > than 1024 reset to 1024...else increase value by 1
+                else parse_value = ((parse_value > 1023) ? 1024 : (parse_value + 1));
+                // set the new input value
+                input.value = parse_value;
+                // store the new length
+                monitor.set("user.plength", parse_value);
                 // reset the caret to the position that it was
                 input.setSelectionRange(selection_start, selection_end);
                 // prevent input focus
@@ -86,32 +88,22 @@ app.module("events", function(modules, name) {
          * @param {EventObject} e [Browser passed in Event Object.]
          */
         "toggle_option": function(e) {
-            // cache target element
+            // cache the target element
             var target = e.target;
-            // check if element is an option element
-            if (target.classList.contains("option-status") || target.classList.contains("fa-check")) {
-                // reset target var to parent if actual checkmark is clicked
-                if (target.classList.contains("fa-check")) {
-                    target = target.parentNode;
-                }
-                if (target.classList.contains("option-on") || target.classList.contains("option-on-blue")) {
-                    // clear the storage if save option is ticked off
-                    if (target.classList.contains("option-on-blue")) {
-                        localStorage.clear();
-                    }
-                    target.classList.remove("option-on");
-                    target.classList.remove("option-on-blue");
-                    target.classList.add("option-off");
-                } else {
-                    target.classList.remove("option-off");
-                    if (target.dataset.optionName === "preferences") {
-                        target.classList.add("option-on-blue");
-                    } else target.classList.add("option-on");
-                }
-                // store the changes to local storage
-                store_options();
-                embed_password();
-                all_options_off();
+            // delegation/filter via FunnelJS
+            var parents = Funnel(target)
+                .parents()
+                .getStack();
+            var delegate = Funnel(target)
+                .concat(parents)
+                .classes("option-status")
+                .getElement();
+            // if there is a wanted filtered element (delegate)
+            if (delegate) {
+                // cache the delegates data option name
+                var option_name = delegate.dataset.optionName;
+                // update the monitor. toggle value
+                monitor.set("user." + option_name, !monitor.object.user[option_name]);
             }
         },
         /**
@@ -139,12 +131,12 @@ app.module("events", function(modules, name) {
         }
     };
     // check inputed password length
-    $$.length_input.addEventListener("input", handlers.length_check);
-    $$.length_input.addEventListener("paste", handlers.length_check);
+    $$.length_input.addEventListener("input", handlers.length_check, false);
+    $$.length_input.addEventListener("paste", handlers.length_check, false);
     // increase/decrease input value on respective keypress
-    $$.length_input.addEventListener("keydown", handlers.input_length_keypress);
+    $$.length_input.addEventListener("keydown", handlers.input_length_keypress, false);
     // toggle generator options
-    document.addEventListener("click", handlers.toggle_option);
+    document.addEventListener("click", handlers.toggle_option, false);
     // listen to button clicks
-    document.addEventListener("click", handlers.btn_clicks);
+    document.addEventListener("click", handlers.btn_clicks, false);
 }, "complete");
